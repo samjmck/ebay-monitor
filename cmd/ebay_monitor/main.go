@@ -6,12 +6,52 @@ import (
 	"github.com/PuerkitoBio/goquery"
 	"github.com/spf13/viper"
 	"io"
+	"log"
 	"net/http"
 	"os"
 	"time"
+	"github.com/pkg/errors"
 )
 
-func StartWebServer(pullListings *[]*Listing) {
+
+func loadConfig() error {
+	viper.SetConfigName("config")
+	viper.SetConfigType("toml")
+	viper.AddConfigPath(".")
+	err := viper.ReadInConfig()
+	if err != nil {
+		return errors.Wrap(err, "could not load config.toml")
+	}
+
+	viper.SetConfigFile(".env")
+	viper.AddConfigPath(".")
+	err = viper.MergeInConfig()
+	if err != nil {
+		return errors.Wrap(err, "could not load .env")
+	}
+
+	return nil
+}
+
+func getSearchUrls() ([]string, error) {
+	var searches []struct{
+		Url string
+	}
+
+	err := viper.UnmarshalKey("searches", &searches)
+	if err != nil {
+		return nil, errors.Wrap(err, "could not unmarshal searches key of config")
+	}
+
+	searchUrls := []string{}
+	for _, search := range searches {
+		searchUrls = append(searchUrls, search.Url)
+	}
+
+	return searchUrls, nil
+}
+
+func startWebServer(pullListings *[]*Listing) error {
 	http.HandleFunc("/pull_listings", func(writer http.ResponseWriter, req *http.Request) {
 		writer.Header().Set("Content-Type", "application/json")
 
@@ -24,60 +64,29 @@ func StartWebServer(pullListings *[]*Listing) {
 		*pullListings = []*Listing{}
 	})
 
-	http.ListenAndServe(":8080", nil)
+	err := http.ListenAndServe(":8080", nil)
+	if err != nil {
+		return errors.Wrap(err, "could not start web server on :8080")
+	}
+
+	return nil
 }
 
-func main() {
-	viper.SetConfigName("config")
-	viper.SetConfigType("toml")
-	viper.AddConfigPath(".")
-	err := viper.ReadInConfig()
-	if err != nil {
-		panic(fmt.Errorf("Fatal error config.toml: %s \n", err))
-	}
-
-	viper.SetConfigFile(".env")
-	viper.AddConfigPath(".")
-	err = viper.MergeInConfig()
-	if err != nil {
-		panic(fmt.Errorf("Fatal error .env: %s \n", err))
-	}
-
-	p, _ := json.MarshalIndent(viper.Get("searches"), "", "  ")
-	fmt.Println(string(p))
-
-	var searches []struct{
-		Url string
-	}
-	viper.UnmarshalKey("searches", &searches)
-	searchUrls := []string{}
-	for _, search := range searches {
-		searchUrls = append(searchUrls, search.Url)
-	}
-
-	fmt.Println(searchUrls)
-
+func startScraping(searchUrls []string, pullListings *[]*Listing, usingWebServer bool) {
 	scrapedf, err := os.OpenFile("scraped.json", os.O_RDWR, os.ModePerm)
 	if err != nil {
-		panic(fmt.Errorf("Could not open scraped.json: %s \n", err))
+		log.Fatalf("Could not open scraped.json: %v\n", err)
 	}
 	defer scrapedf.Close()
+
 	var scraped map[string]map[string]bool
 
 	err = json.NewDecoder(scrapedf).Decode(&scraped)
 	if err != nil {
-		panic(fmt.Errorf("Could not decode scraped.json: %s \n", err))
+		log.Fatalf("Could not decode scraped.json: %v\n", err)
 	}
 
 	encoder := json.NewEncoder(scrapedf)
-
-	// TODO: use channel to stop race condition
-	pullListings := []*Listing{}
-
-	useWebServer := viper.GetBool("web-server")
-	if useWebServer {
-		go StartWebServer(&pullListings)
-	}
 
 	for {
 		for _, searchUrl := range searchUrls {
@@ -127,8 +136,8 @@ func main() {
 					panic(fmt.Errorf("Could not encode to scraped.json: %s \n", err))
 				}
 
-				if useWebServer {
-					pullListings = append(pullListings, listing)
+				if usingWebServer {
+					*pullListings = append(*pullListings, listing)
 				}
 
 				if len(scraped[searchUrl]) == 1 {
@@ -141,4 +150,26 @@ func main() {
 		}
 		time.Sleep(time.Duration(viper.GetInt("interval")) * time.Second)
 	}
+}
+
+func main() {
+	err := loadConfig()
+	if err != nil {
+		log.Fatalf("Could not load configs: %v\n", err)
+	}
+
+	searchUrls, err := getSearchUrls()
+	if err != nil {
+		log.Fatalf("Could not get search URLs: %v\n", err)
+	}
+
+	// TODO: use channel to stop race condition
+	pullListings := []*Listing{}
+
+	useWebServer := viper.GetBool("web-server")
+	if useWebServer {
+		go startWebServer(&pullListings)
+	}
+
+	startScraping(searchUrls, &pullListings, useWebServer)
 }
