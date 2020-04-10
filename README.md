@@ -50,3 +50,5 @@ The other keys in `config.toml` will be explained here:
 - `web-server` indicates whether the web server will be ran from which you can pull new listings. This can act as an alternative to the Telegram messages.
 - `track-scraped-urls` will add scraped URLs to scraped.json to save the last position, but it is not essential to running the program
 
+## Running
+To run the program, change directory to the folder with all the program files and run `ebay-monitor`. 
