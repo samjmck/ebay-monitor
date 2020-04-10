@@ -1,5 +1,14 @@
+delay = 60
+message = """
+{{.Url}}
+{{.Title}}
+{{.Format}} with price {{.Price}} (postage {{.Postage}})
+Condition {{.Condition}}
+Seller has {{.SellerStars}} stars with a rating of {{.SellerFeedbackPercentage}}%
+"""
+
 web-server = false
-interval = 5
+track-scraped-urls = true
 
 [[searches]]
 url = "https://www.ebay.co.uk/sch/i.html?_from=R40&_nkw=iphone&_sacat=0&_sop=10"
