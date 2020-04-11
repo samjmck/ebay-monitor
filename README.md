@@ -2,7 +2,7 @@
 Scrapes eBay search pages so you don't have to look at them revisit them manually
 
 ## Installation
-1. Download the latest release in the releases section [here](https://github.com/samjmckenzie/ebay-monitor/releases).
+1. Download the latest release from the releases section [here](https://github.com/samjmckenzie/ebay-monitor/releases).
 2. Unzip the release zip file. It contains the configuration files `config.toml` and `.env` as well as the binary files `ebay-monitor` and `telegram-chat-id` needed to run the program.
 3. Change directory to the unzipped folder containing the files. Add execute permissions to the binary files by running `chmod +x ebay-monitor` and `chmod +x telegram-chat-id`.
 
