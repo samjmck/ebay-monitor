@@ -3,3 +3,5 @@
 ./telegram_chat_id
 .env
 /releases
+/test
+.DS_Store
