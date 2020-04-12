@@ -1,10 +1,21 @@
 # ebay-monitor
-Scrapes eBay search pages so you don't have to look at them revisit them manually
+Scrapes eBay search pages so you don't have to revisit them manually
+
+## Quick install for Raspberry Pi
+Change directory to where you would like to install the program and then run the following commands.
+
+```shell script
+curl -OL https://github.com/samjmckenzie/ebay-monitor/releases/latest/download/ebay-monitor-linux-armv6l.zip
+curl -OL https://github.com/samjmckenzie/ebay-monitor/releases/latest/download/config-files.zip
+unzip ebay-monitor-linux-armv6l.zip
+unzip config-files.zip
+chmod +x ebay-monitor telegram-chat-id
+```
 
 ## Installation
-1. Download the latest release from the releases section [here](https://github.com/samjmckenzie/ebay-monitor/releases).
-2. Unzip the release zip file. It contains the configuration files `config.toml` and `.env` as well as the binary files `ebay-monitor` and `telegram-chat-id` needed to run the program.
-3. Change directory to the unzipped folder containing the files. Add execute permissions to the binary files by running `chmod +x ebay-monitor` and `chmod +x telegram-chat-id`.
+1. Download the latest release for your system architecture as well as the config files [here](https://github.com/samjmckenzie/ebay-monitor/releases).
+2. Unzip the binary and config zip files.
+3. Add execute permissions to the binary files by running `chmod +x ebay-monitor` and `chmod +x telegram-chat-id`.
 
 ## Setting up
 The main purpose of the program is to notify you whenever a new listing appears on an eBay search page. We will be using the Telegram messaging app to send these notifications as the app easily allows you to create bots. 
