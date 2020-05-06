@@ -5,6 +5,7 @@ import (
 	"github.com/pkg/errors"
 	"strconv"
 	"strings"
+	"unicode"
 )
 
 type Format string
@@ -25,13 +26,47 @@ type Listing struct {
 	Location		string	`json:"location"`
 	Title			string	`json:"title"`
 	Condition		string	`json:"condition"`
-	Price			[2]int	`json:"price"`
+	Price			float32	`json:"price"`
+	Currency		string
 	Postage			int		`json:"postage"`
 	CanMakeOffer	bool	`json:"canMakeOffer"`
 	Returns			string	`json:"returns"`
 }
 
-func GetListing(url string, doc *goquery.Document) (*Listing, error) {
+func GetPrice(price string) (float32, error) {
+	// some countries use commas instead of dots so replace commas with dots
+	if strings.Index(price, ",") != -1 {
+		price = strings.ReplaceAll(price, ".", "")
+		price = strings.ReplaceAll(price, ",", ".")
+	}
+	foundStartingIndex := false
+	var startingIndex, endingIndex int
+	for i, rune := range price {
+		if unicode.IsDigit(rune) || rune == '.' {
+			if !foundStartingIndex {
+				startingIndex = i
+				foundStartingIndex = true
+			}
+			continue
+		}
+		if foundStartingIndex {
+			endingIndex = i - 1
+			break
+		}
+	}
+
+	if endingIndex == 0 {
+		endingIndex = len(price)
+	}
+
+	float, err := strconv.ParseFloat(price[startingIndex:endingIndex], 32)
+	if err != nil {
+		return 0, errors.Wrap(err, "could not convert price to float")
+	}
+	return float32(float), nil
+}
+
+func GetListing(url string, currency string, doc *goquery.Document) (*Listing, error) {
 	listing := &Listing{}
 
 	listing.Url = url
@@ -62,11 +97,19 @@ func GetListing(url string, doc *goquery.Document) (*Listing, error) {
 		listing.SellerFeedbackPercentage = float32(sellerFeedbackPercentage)
 	}
 
+	price, err := GetPrice(doc.Find("span#prcIsum").Text())
+	if err != nil {
+		return nil, errors.Wrap(err, "could not determine price")
+	}
+	listing.Price = price
+
 	format := BuyItNow
 	if len(doc.Find("a#bidBtn_btn").Nodes) > 0 {
 		format = Auction
 	}
 	listing.Format = format
+
+	listing.Currency = currency
 
 	listing.Location = doc.Find("span[itemprop=availableAtOrFrom]").Text()
 

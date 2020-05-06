@@ -15,6 +15,10 @@ import (
 	"time"
 )
 
+type SearchItem struct {
+	Url string
+	Currency string
+}
 
 func loadConfig() error {
 	// Load config.toml
@@ -37,23 +41,16 @@ func loadConfig() error {
 	return nil
 }
 
-func getSearchUrls() ([]string, error) {
-	var searches []struct{
-		Url string
-	}
+func getSearchItems() ([]SearchItem, error) {
+	var searchItems []SearchItem
 
-	// Load search items from config.toml
-	err := viper.UnmarshalKey("searches", &searches)
+	// Load SearchItem items from config.toml
+	err := viper.UnmarshalKey("searches", &searchItems)
 	if err != nil {
-		return nil, errors.Wrap(err, "could not unmarshal searches key of config")
+		return nil, errors.Wrap(err, "could not unmarshal searchItems key of config")
 	}
 
-	searchUrls := []string{}
-	for _, search := range searches {
-		searchUrls = append(searchUrls, search.Url)
-	}
-
-	return searchUrls, nil
+	return searchItems, nil
 }
 
 // This func will probably be ran in a new goroutine which means we should not
@@ -81,7 +78,7 @@ func startWebServer(pullListings *[]*Listing) error {
 	return nil
 }
 
-func startScraping(searchUrls []string, trackScrapedUrls bool, newListing func(searchUrl string, listing *Listing)) error {
+func startScraping(searchItems []SearchItem, trackScrapedUrls bool, newListing func(searchUrl string, listing *Listing)) error {
 	var scraped map[string]map[string]bool
 	var encoder *json.Encoder
 	var scrapedf *os.File
@@ -107,11 +104,13 @@ func startScraping(searchUrls []string, trackScrapedUrls bool, newListing func(s
 	}
 
 	for {
-		for _, searchUrl := range searchUrls {
+		for _, searchItem := range searchItems {
+			searchUrl := searchItem.Url
+
 			fmt.Println("Searching with", searchUrl)
 			doc, err := Get(searchUrl)
 			if err != nil {
-				fmt.Printf("Could not make request to search page: %v", err)
+				fmt.Printf("Could not make request to SearchItem page: %v", err)
 				continue
 			}
 
@@ -154,7 +153,7 @@ func startScraping(searchUrls []string, trackScrapedUrls bool, newListing func(s
 					return true
 				}
 
-				listing, err := GetListing(url, doc)
+				listing, err := GetListing(url, searchItem.Currency, doc)
 				if err != nil {
 					fmt.Printf("Could not get listing details: %v", err)
 					return true
@@ -184,9 +183,9 @@ func main() {
 		log.Fatalf("Could not load configs: %v\n", err)
 	}
 
-	searchUrls, err := getSearchUrls()
+	searchItems, err := getSearchItems()
 	if err != nil {
-		log.Fatalf("Could not get search URLs: %v\n", err)
+		log.Fatalf("Could not get SearchItem URLs: %v\n", err)
 	}
 
 	// TODO: use channel to stop race condition
@@ -207,7 +206,7 @@ func main() {
 		fmt.Printf("Could not parse message template: %v\n", err)
 	}
 
-	err = startScraping(searchUrls, viper.GetBool("track-scraped-urls"), func(_ string, listing *Listing) {
+	err = startScraping(searchItems, viper.GetBool("track-scraped-urls"), func(_ string, listing *Listing) {
 		pullListings = append(pullListings, listing)
 
 		buf := &bytes.Buffer{}

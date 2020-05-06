@@ -11,4 +11,4 @@ web-server = false
 track-scraped-urls = true
 
 [[searches]]
-url = "https://www.ebay.co.uk/sch/i.html?_from=R40&_nkw=iphone&_sacat=0&_sop=10"
+url = ""

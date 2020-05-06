@@ -4,11 +4,12 @@ Scrapes eBay search pages so you don't have to revisit them manually
 ## Quick install for Raspberry Pi
 Change directory to where you would like to install the program and then run the following commands.
 
-```shell script
+```bash
 curl -OL https://github.com/samjmckenzie/ebay-monitor/releases/latest/download/ebay-monitor-linux-armv6l.zip
 curl -OL https://github.com/samjmckenzie/ebay-monitor/releases/latest/download/config-files.zip
 unzip ebay-monitor-linux-armv6l.zip
 unzip config-files.zip
+rm ebay-monitor-linux-armv6l.zip config-files.zip
 chmod +x ebay-monitor telegram-chat-id
 ```
 
