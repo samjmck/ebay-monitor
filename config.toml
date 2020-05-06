@@ -2,7 +2,7 @@ delay = 60
 message = """
 {{.Url}}
 {{.Title}}
-{{.Format}} with price {{.Price}} (postage {{.Postage}})
+{{.Format}} with price {{.Price}} {{.Currency}} (postage {{.Postage}})
 Condition {{.Condition}}
 Seller has {{.SellerStars}} stars with a rating of {{.SellerFeedbackPercentage}}%
 """
@@ -12,3 +12,4 @@ track-scraped-urls = true
 
 [[searches]]
 url = ""
+currency = "EUR"
